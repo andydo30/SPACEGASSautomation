@@ -31,3 +31,6 @@ docs/_build/
 .idea/
 .vscode/
 *.swp
+
+# LLM helpers
+.claude/
