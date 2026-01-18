@@ -1,0 +1,33 @@
+﻿# Python
+# Byte-compiled / optimized / compressed files and directories.
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.whl
+
+# Distributions and packaging.
+.Python
+build/
+dist/
+wheels/
+*.egg-info/
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+venv.bak/
+bin/
+lib/
+include/
+
+# Documentation
+docs/_build/
+
+# Editors and IDEs
+.idea/
+.vscode/
+*.swp
