@@ -12,9 +12,14 @@ test:
 test-verbose:
     uv run pytest tests/ -v
 
-# Run tests with coverage output
+# Run tests with coverage report
 test-cov:
-    uv run pytest tests/ -v --tb=short
+    uv run pytest tests/ --cov=src --cov-report=term-missing
+
+# Run tests with HTML coverage report
+test-cov-html:
+    uv run pytest tests/ --cov=src --cov-report=html
+    @echo "Coverage report generated in htmlcov/index.html"
 
 # Run a specific test file
 test-file FILE:

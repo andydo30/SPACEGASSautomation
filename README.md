@@ -149,6 +149,8 @@ just                      # List all available commands
 just install              # Install dev dependencies
 just test                 # Run all tests
 just test-verbose         # Run tests with verbose output
+just test-cov             # Run tests with coverage report
+just test-cov-html        # Run tests with HTML coverage report
 just test-file FILE       # Run a specific test file
 just test-match PATTERN   # Run tests matching a pattern
 just format               # Format code with black
