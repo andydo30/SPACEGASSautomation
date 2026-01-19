@@ -6,6 +6,7 @@ A class for parsing and interacting with SPACEGASS structural analysis output fi
 
 import csv
 import re
+import warnings
 from io import StringIO
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Union
@@ -261,6 +262,85 @@ class SGResults:
                 mask &= df['member_id'].isin(member_id)
 
         return df[mask]
+
+    def query_member_sections(
+        self,
+        member_id: Optional[Union[int, List[int]]] = None,
+    ) -> pd.DataFrame:
+        """
+        Query member information joined with section properties.
+
+        Args:
+            member_id: Single member ID or list of IDs to filter by.
+                       Returns all members if None.
+
+        Returns:
+            DataFrame with member info joined with section properties.
+            All columns from both members and sections tables are included.
+            Returns empty DataFrame if no members exist.
+
+        Warns:
+            UserWarning: If any requested member IDs don't exist in the model.
+                        Results are still returned for valid member IDs.
+
+        Examples:
+            >>> results = SGResults('output.txt')
+            >>> # Get all members with section properties
+            >>> all_data = results.query_member_sections()
+            >>> # Get specific member
+            >>> member_1 = results.query_member_sections(member_id=1)
+            >>> # Get multiple members
+            >>> data = results.query_member_sections(member_id=[1, 2, 3])
+        """
+        members_df = self.members
+        sections_df = self.sections
+
+        # Early return if members table is empty
+        if members_df.empty:
+            return pd.DataFrame()
+
+        # Filter members if member_id provided
+        if member_id is not None:
+            # Normalize to list for consistent handling
+            if isinstance(member_id, int):
+                member_ids = [member_id]
+            elif isinstance(member_id, str):
+                raise TypeError("member_id must be an int or list of ints, not str")
+            else:
+                member_ids = list(member_id)
+
+            # Check for invalid member IDs and warn
+            valid_ids = set(members_df['member_id'])
+            requested_ids = set(member_ids)
+            invalid_ids = requested_ids - valid_ids
+
+            if invalid_ids:
+                warnings.warn(
+                    f"Member IDs not found: {sorted(invalid_ids)}",
+                    UserWarning,
+                    stacklevel=2,
+                )
+
+            # Filter to requested members
+            members_df = members_df[members_df['member_id'].isin(member_ids)]
+
+            # Return empty if no valid members
+            if members_df.empty:
+                return pd.DataFrame()
+
+        # Return members only if no sections exist
+        if sections_df.empty:
+            return members_df
+
+        # Join members with sections on section_id
+        result = members_df.merge(
+            sections_df,
+            on='section_id',
+            how='left',
+            suffixes=('', '_section'),
+        )
+
+        return result
 
     # -------------------------------------------------------------------------
     # Parsing methods

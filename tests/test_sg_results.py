@@ -279,6 +279,87 @@ class TestQueryForcesMoments:
         assert all(result["load_case_id"].isin([1, 2]))
 
 
+class TestQueryMemberSections:
+    """Tests for query_member_sections method."""
+
+    def test_query_all_members(self, minimal_results: SGResults):
+        """Test query with no filters returns all members with sections."""
+        result = minimal_results.query_member_sections()
+        # Should have same number of rows as members
+        assert len(result) == len(minimal_results.members)
+        # Should have columns from both tables
+        assert 'member_id' in result.columns
+        assert 'section_id' in result.columns
+        assert 'name' in result.columns  # from sections
+        assert 'area' in result.columns  # from sections
+
+    def test_query_single_member(self, minimal_results: SGResults):
+        """Test filtering by single member ID."""
+        result = minimal_results.query_member_sections(member_id=1)
+        assert len(result) == 1
+        assert result.iloc[0]['member_id'] == 1
+
+    def test_query_multiple_members(self, minimal_results: SGResults):
+        """Test filtering by multiple member IDs."""
+        result = minimal_results.query_member_sections(member_id=[1, 2])
+        assert len(result) == 2
+        assert set(result['member_id']) == {1, 2}
+
+    def test_query_invalid_member_warns(self, minimal_results: SGResults):
+        """Test that invalid member IDs produce warnings."""
+        with pytest.warns(UserWarning, match="Member IDs not found"):
+            result = minimal_results.query_member_sections(member_id=[1, 999])
+        # Should still return results for valid ID
+        assert len(result) == 1
+        assert result.iloc[0]['member_id'] == 1
+
+    def test_query_all_invalid_returns_empty(self, minimal_results: SGResults):
+        """Test that all invalid IDs returns empty DataFrame."""
+        with pytest.warns(UserWarning):
+            result = minimal_results.query_member_sections(member_id=[999, 1000])
+        assert len(result) == 0
+        assert isinstance(result, pd.DataFrame)
+
+    def test_section_properties_included(self, minimal_results: SGResults):
+        """Test that section properties are properly joined."""
+        result = minimal_results.query_member_sections(member_id=1)
+        # Check specific section properties exist
+        assert 'area' in result.columns
+        assert 'Ixx' in result.columns
+        assert 'Iyy' in result.columns
+        # Verify values are present (not NaN)
+        assert pd.notna(result.iloc[0]['area'])
+
+    def test_query_with_tuple_input(self, minimal_results: SGResults):
+        """Test that tuple input works like list input."""
+        result = minimal_results.query_member_sections(member_id=(1, 2))
+        assert len(result) == 2
+        assert set(result['member_id']) == {1, 2}
+
+    def test_string_input_raises_error(self, minimal_results: SGResults):
+        """Test that string input raises TypeError."""
+        with pytest.raises(TypeError, match="must be an int or list of ints"):
+            minimal_results.query_member_sections(member_id="1")
+
+    def test_empty_members_returns_empty(self, minimal_results: SGResults):
+        """Test that empty members table returns empty DataFrame."""
+        # Clear members DataFrame
+        minimal_results._dataframes['members'] = pd.DataFrame()
+        result = minimal_results.query_member_sections()
+        assert isinstance(result, pd.DataFrame)
+        assert result.empty
+
+    def test_empty_sections_returns_members_only(self, minimal_results: SGResults):
+        """Test that empty sections returns members without section properties."""
+        # Clear sections DataFrame
+        minimal_results._dataframes['sections'] = pd.DataFrame()
+        result = minimal_results.query_member_sections(member_id=1)
+        assert len(result) == 1
+        assert 'member_id' in result.columns
+        # Section columns should not be present
+        assert 'area' not in result.columns
+
+
 class TestEmptySections:
     """Tests for empty/missing section handling."""
 
