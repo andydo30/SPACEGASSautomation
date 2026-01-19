@@ -46,6 +46,7 @@ class SGResults:
         'MEMBER INTERMEDIATE DISPLACEMENTS': 'member_int_displacements',
         'MEMBER INTERMEDIATE FORCES AND MOMENTS': 'member_int_forces_moments',
         'MEMBER STRESSES': 'member_stresses',
+        'STEELMEMBERS': 'steel_members',
     }
 
     # Sections that have multi-line records
@@ -105,6 +106,9 @@ class SGResults:
         'MEMBER FORCES AND MOMENTS': [
             'load_case_id', 'member_id', 'col_0', 'fx', 'fy', 'fz', 'mx', 'my', 'mz',
             'col_1'
+        ],
+        'MEMBER INTERMEDIATE FORCES AND MOMENTS': [
+            'load_case_id', 'member_id', 'col_0', 'col_1', 'fx', 'fy', 'fz', 'mx', 'my', 'mz'
         ],
         # Add more section column mappings as needed...
     }
@@ -211,6 +215,10 @@ class SGResults:
     @property
     def member_stresses(self) -> pd.DataFrame:
         return self._dataframes.get('member_stresses', pd.DataFrame())
+
+    @property
+    def steel_members(self) -> pd.DataFrame:
+        return self._dataframes.get('steel_members', pd.DataFrame())
 
     # -------------------------------------------------------------------------
     # Query methods
