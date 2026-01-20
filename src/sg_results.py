@@ -32,6 +32,7 @@ class SGResults:
         'MEMBERS': 'members',
         'RESTRAINTS': 'restraints',
         'SECTIONS': 'sections',
+        'PLATES': 'plates',
         'MATERIALS': 'materials',
         'NODELOADS': 'node_loads',
         'MEMBFORCES': 'member_forces',
@@ -156,6 +157,10 @@ class SGResults:
     @property
     def sections(self) -> pd.DataFrame:
         return self._dataframes.get('sections', pd.DataFrame())
+
+    @property
+    def plates(self) -> pd.DataFrame:
+        return self._dataframes.get('plates', pd.DataFrame())
 
     @property
     def materials(self) -> pd.DataFrame:
