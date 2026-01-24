@@ -68,6 +68,37 @@ forces = results.query_forces_moments(load_case_id=1, member_id=[1, 2, 3])
 member_sections = results.query_member_sections(member_id=[1, 2, 3])
 ```
 
+### Concrete Capacity Analysis
+
+```python
+from concrete_capacity import (
+    ConcreteCapacityAnalyser,
+    SectionGeometry,
+    ConcreteProperties,
+    ReinforcementLayer,
+    AppliedLoads,
+)
+
+# Create analyser
+analyser = ConcreteCapacityAnalyser()
+
+# Define section
+geometry = SectionGeometry(depth=500, width=300)
+concrete = ConcreteProperties(strength=40)
+top_reo = ReinforcementLayer(bar_size=16, spacings=(200,))
+bottom_reo = ReinforcementLayer(bar_size=20, spacings=(150, 150))
+
+# Single calculation
+loads = AppliedLoads(mz=250, fx=50)
+result = analyser.calculate(geometry, concrete, top_reo, bottom_reo, loads)
+print(f"Utilisation: {result.ultimate_utilisation:.1%}")
+
+# Batch calculation from SPACEGASS output
+forces = results.query_forces_moments(member_id=5)
+loads_list = [AppliedLoads.from_series(row) for _, row in forces.iterrows()]
+results = analyser.calculate_batch(geometry, concrete, top_reo, bottom_reo, loads_list)
+```
+
 ## API Reference
 
 ### SGResults
@@ -134,6 +165,78 @@ Returns a DataFrame with all member columns joined with all section columns. War
 
 Returns a string summary of all loaded sections and their sizes.
 
+### ConcreteCapacityAnalyser
+
+Analyses reinforced concrete beam section capacity using an Excel spreadsheet (AS3600-2018).
+
+#### Constructor
+
+```python
+ConcreteCapacityAnalyser(
+    spreadsheet_path: Optional[Path | str] = None,
+    cells: Optional[SpreadsheetCells] = None
+)
+```
+
+| Parameter | Description |
+|-----------|-------------|
+| `spreadsheet_path` | Path to Excel spreadsheet. Defaults to `RC Beam Design to AS3600 - 2018.xlsm` in src directory |
+| `cells` | Custom cell mapping configuration |
+
+#### Input Dataclasses
+
+| Dataclass | Attributes | Description |
+|-----------|------------|-------------|
+| `SectionGeometry` | `depth`, `width` | Section dimensions in mm |
+| `ConcreteProperties` | `strength` | Concrete f'c in MPa (max 100) |
+| `ReinforcementLayer` | `bar_size`, `spacings` | Bar size (10-40mm) and layer spacings (up to 5 layers) |
+| `AppliedLoads` | `fx`, `fy`, `fz`, `mx`, `my`, `mz` | Forces (kN) and moments (kNm) |
+
+#### Output Dataclass
+
+`UtilisationResult`:
+
+| Attribute | Type | Description |
+|-----------|------|-------------|
+| `ultimate_utilisation` | `float` | Ratio of applied/capacity moment (<=1.0 is OK) |
+| `ultimate_strength` | `float` | Ultimate moment capacity in kNm |
+| `serviceability_stress` | `float` | Bottom bar stress in MPa |
+| `serviceability_utilisation` | `float` | Serviceability utilisation ratio |
+| `is_adequate` | `bool` | Property: True if both checks pass |
+
+#### Methods
+
+##### `calculate(geometry, concrete, top_reinforcement, bottom_reinforcement, loads)`
+
+Calculate capacity for a single load case.
+
+```python
+result = analyser.calculate(geometry, concrete, top_reo, bottom_reo, loads)
+if result.is_adequate:
+    print("Section OK")
+```
+
+##### `calculate_batch(geometry, concrete, top_reinforcement, bottom_reinforcement, loads_list)`
+
+Calculate capacity for multiple load cases efficiently (opens workbook once).
+
+```python
+# Integrate with SGResults
+from sg_results import SGResults
+from concrete_capacity import ConcreteCapacityAnalyser, AppliedLoads, ...
+
+results = SGResults('output.txt')
+forces = results.query_forces_moments(member_id=5)
+
+analyser = ConcreteCapacityAnalyser()
+loads_list = [AppliedLoads.from_series(row) for _, row in forces.iterrows()]
+capacity_results = analyser.calculate_batch(geometry, concrete, top_reo, bottom_reo, loads_list)
+
+# Find worst case
+worst = max(capacity_results, key=lambda r: r.ultimate_utilisation)
+print(f"Worst utilisation: {worst.ultimate_utilisation:.1%}")
+```
+
 ## Configuration
 
 <!-- TODO: Add any configuration options -->
@@ -162,12 +265,14 @@ just format-check         # Check formatting without changes
 ```
 SPACEGASSautomation/
 ├── src/
-│   ├── sg_results.py    # Main parser class
-│   └── script.py        # Legacy automation script
+│   ├── sg_results.py        # SPACEGASS output parser
+│   ├── concrete_capacity.py # Concrete section capacity analyser
+│   └── script.py            # Legacy automation script
 ├── tests/
-│   ├── conftest.py      # Test fixtures
+│   ├── conftest.py          # Test fixtures
 │   ├── test_sg_results.py
-│   └── fixtures/        # Test data files
+│   ├── test_concrete_capacity.py
+│   └── fixtures/            # Test data files
 ├── pyproject.toml
 └── README.md
 ```
