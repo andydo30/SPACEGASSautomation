@@ -338,7 +338,7 @@ def import_section_properties(section_properties_file):
 
 def import_sg_output(master_excel):
     # 1) Create the SPACE GASS script
-    # import_spacegass_script(master_excel)
+    import_spacegass_script(master_excel)
 
     # 2) Import the master Excel
     print("Importing master Excel file")
@@ -498,35 +498,26 @@ def average_moment(text_file, ref_member):
 
     # Index of member start lines
     # TODO Andy to replace below code with Chris' updates
-    idx_members_start = lines.index("MEMBERS\n")
-    idx_members_end = lines.index("PLATES\n")
+    results = SGResults(text_file)
+    df_members = results.members
 
-    member_data = lines[idx_members_start + 1:idx_members_end]
+    df_nodes = results.nodes
 
-    df_members = pd.read_csv(StringIO("".join(member_data)), names=member_column_names)
-
-    # Index of node start lines
-    idx_node_start = lines.index("NODES\n")
-    idx_node_end = lines.index("MEMBERS\n")
-
-    node_data = lines[idx_node_start + 1:idx_node_end]
-
-    df_nodes = pd.read_csv(StringIO("".join(node_data)), names=node_column_names)
 
     # Find the row where the reference member is, where ref_member is an input to the function
-    ref_member_row = df_members[df_members["Member ID"] == ref_member]
+    ref_member_row = df_members[df_members["member_id"] == ref_member]
 
     # Get the connecting nodes of the reference member
-    ref_node_1 = ref_member_row["Node 1"].item()
-    ref_node_2 = ref_member_row["Node 2"].item()
+    ref_node_1 = ref_member_row["node_i"].item()
+    ref_node_2 = ref_member_row["node_j"].item()
 
     # Then get the coordinates of both connecting nodes
-    ref_node_1_coordinates = [df_nodes[df_nodes["Node ID"] == ref_node_1]['x'].item(),
-                              df_nodes[df_nodes["Node ID"] == ref_node_1]['y'].item(),
-                              df_nodes[df_nodes["Node ID"] == ref_node_1]['z'].item()]
-    ref_node_2_coordinates = [df_nodes[df_nodes["Node ID"] == ref_node_2]['x'].item(),
-                              df_nodes[df_nodes["Node ID"] == ref_node_2]['y'].item(),
-                              df_nodes[df_nodes["Node ID"] == ref_node_2]['z'].item()]
+    ref_node_1_coordinates = [df_nodes[df_nodes["node_id"] == ref_node_1]['x'].item(),
+                              df_nodes[df_nodes["node_id"] == ref_node_1]['y'].item(),
+                              df_nodes[df_nodes["node_id"] == ref_node_1]['z'].item()]
+    ref_node_2_coordinates = [df_nodes[df_nodes["node_id"] == ref_node_2]['x'].item(),
+                              df_nodes[df_nodes["node_id"] == ref_node_2]['y'].item(),
+                              df_nodes[df_nodes["node_id"] == ref_node_2]['z'].item()]
 
     # Find the mid-point of the reference member
     mid_point_ref = [(ref_node_2_coordinates[0] + ref_node_1_coordinates[0]) / 2,
@@ -544,15 +535,15 @@ def average_moment(text_file, ref_member):
 
     # TODO iterate through all members and do the same as the same of reference member and find the midpoint of the member, then compare to mid_point_ref
     for i in range(len(df_members)):
-        node_1 = df_members.iloc[i]["Node 1"]
-        node_2 = df_members.iloc[i]["Node 2"]
+        node_1 = df_members.iloc[i]["node_i"]
+        node_2 = df_members.iloc[i]["node_j"]
 
-        node_1_coordinates = [float(df_nodes[df_nodes["Node ID"] == node_1]['x'].item()),
-                              float(df_nodes[df_nodes["Node ID"] == node_1]['y'].item()),
-                              float(df_nodes[df_nodes["Node ID"] == node_1]['z'].item())]
-        node_2_coordinates = [float(df_nodes[df_nodes["Node ID"] == node_2]['x'].item()),
-                              float(df_nodes[df_nodes["Node ID"] == node_2]['y'].item()),
-                              float(df_nodes[df_nodes["Node ID"] == node_2]['z'].item())]
+        node_1_coordinates = [float(df_nodes[df_nodes["node_id"] == node_1]['x'].item()),
+                              float(df_nodes[df_nodes["node_id"] == node_1]['y'].item()),
+                              float(df_nodes[df_nodes["node_id"] == node_1]['z'].item())]
+        node_2_coordinates = [float(df_nodes[df_nodes["node_id"] == node_2]['x'].item()),
+                              float(df_nodes[df_nodes["node_id"] == node_2]['y'].item()),
+                              float(df_nodes[df_nodes["node_id"] == node_2]['z'].item())]
 
         direction_vector = [node_1_coordinates[0] - node_2_coordinates[0],
                             node_1_coordinates[1] - node_2_coordinates[1],
@@ -602,23 +593,23 @@ def average_moment(text_file, ref_member):
             if mid_point_dif[2] > 0:
                 # Check whether the member in question is closer to the previous member
                 if distance < closest_above[1]:
-                    closest_above[0] = df_members.iloc[i]["Member ID"]
+                    closest_above[0] = df_members.iloc[i]["member_id"]
                     closest_above[1] = distance
             # Or down
             elif mid_point_dif[2] < 0:
                 # Check whether the member in question is closer to the previous member
                 if distance < closest_below[1]:
-                    closest_below[0] = df_members.iloc[i]["Member ID"]
+                    closest_below[0] = df_members.iloc[i]["member_id"]
                     closest_below[1] = distance
 
         elif moving_z == True:
             if mid_point_dif[0] > 0:
                 if distance < closest_above[1]:
-                    closest_above[0] = df_members.iloc[i]["Member ID"]
+                    closest_above[0] = df_members.iloc[i]["member_id"]
                     closest_above[1] = distance
             elif mid_point_dif[0] < 0:
                 if distance < closest_below[1]:
-                    closest_below[0] = df_members.iloc[i]["Member ID"]
+                    closest_below[0] = df_members.iloc[i]["member_id"]
                     closest_below[1] = distance
 
         # mid_point = [(node_1_coordinates[0]+node_2_coordinates[0])/2, (node_1_coordinates[1]+node_2_coordinates[1])/2, (node_1_coordinates[2]+node_2_coordinates[2])/2]
@@ -714,6 +705,7 @@ def calculate_utilisation(depth, width, top_bar_1, top_bar_spacing_1, top_bar_sp
 if __name__ == "__main__":
     # For checking the MAIN code
     import_sg_output("MASTER.xlsx")
+    # average_moment("Deck Longs SLS2000-2999.txt", 101)
 
     # average_moment("Deck Longs ULS1000-1999.TXT", 1733)
     # push_values("MASTER.xlsx", "")
