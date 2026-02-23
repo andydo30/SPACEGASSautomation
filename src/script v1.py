@@ -294,9 +294,9 @@ def import_spacegass_script(master_excel):
     count_rows = df_properties[first_column_name].notna().sum()
     for i in range(count_rows):
         default_name += default_output_name
-        default_name += str(df_properties.iloc[i][first_column_name]) + str(
-            df_properties.iloc[i]['Load Cases']) + '.txt" '
-        default_name += '"Cases=' + str(df_properties.iloc[i]['Load Cases']) + '" '
+        default_name += str(df_properties.iloc[i][first_column_name]) + str(int(
+            df_properties.iloc[i]['Load Cases'])) + '.txt" '
+        default_name += '"Cases=' + str(int(df_properties.iloc[i]['Load Cases'])) + '" '
         default_name += '"Filter=' + str(int(df_properties.iloc[i]['Section Filter Number'])) + '" '
         default_name += default_grabs
         default_name += "\n"
@@ -309,7 +309,7 @@ def import_spacegass_script(master_excel):
 
     # TODO Since the SPACE GASS script will always be created in the same directory as this script, simplify sg_script
     sg_exe_dir = 'C:\Program Files\SPACE GASS 14.2\SGCore.exe'
-    sg_script = r'C:\Users\k146666\PyCharmMiscProject\script.txt'
+    sg_script = str(outdir) + '\script.txt'
 
     sg_exe = fr'"{sg_exe_dir}" -n -s "{sg_script}"'
 
@@ -722,3 +722,4 @@ if __name__ == "__main__":
 
     # For checking importing section properties Excel file
     # import_section_properties("MASTER.xlsx")
+
