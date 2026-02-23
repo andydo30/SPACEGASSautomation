@@ -216,6 +216,7 @@ class SpaceGassSelectorApp(ctk.CTk):
         Implement your SpaceGass parsing/automation here.
         Return a human-friendly message.
         """
+        # Test changes
         # Example: simulate writing a results file
         results_path = os.path.join(output_dir, "analysis_results.txt")
         with open(results_path, "w", encoding="utf-8") as f:
@@ -294,10 +295,10 @@ def import_spacegass_script(master_excel):
     count_rows = df_properties[first_column_name].notna().sum()
     for i in range(count_rows):
         default_name += default_output_name
-        default_name += str(df_properties.iloc[i][first_column_name]) + str(int(
-            df_properties.iloc[i]['Load Cases'])) + '.txt" '
-        default_name += '"Cases=' + str(int(df_properties.iloc[i]['Load Cases'])) + '" '
-        default_name += '"Filter=' + str(int(df_properties.iloc[i]['Section Filter Number'])) + '" '
+        default_name += str(df_properties.iloc[i][first_column_name]) + str(
+            df_properties.iloc[i]['Load Cases']) + '.txt" '
+        default_name += '"Cases=' + str(df_properties.iloc[i]['Load Cases']) + '" '
+        default_name += '"Filter=' + str(df_properties.iloc[i]['Section Filter Number']) + '" '
         default_name += default_grabs
         default_name += "\n"
 
